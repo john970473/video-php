@@ -5,15 +5,34 @@ if(isset($_GET["id"]) && $_GET["id"]!="")
     $id = $_GET["id"];
 }
 
-//read json file
-$json = $id;
-$handle = fopen("./context/".$json.".json","rb");
-$context = "";
-while (!feof($handle)) {
-        $context .= fread($handle, 10000);
+//close ssl verify
+$arrContextOptions=array(
+    "ssl"=>array(
+        "verify_peer"=>false,
+        "verify_peer_name"=>false,
+    ),
+);
+
+//get video title
+$key = "AIzaSyBG8X60rXYFXXHO_-laXurRc04tJ1FzhFI";
+$apiUrl = "https://www.googleapis.com/youtube/v3/videos?key=".$key."&part=snippet&id=".$id;
+$data = json_decode(file_get_contents($apiUrl,false,stream_context_create($arrContextOptions)),true);
+
+$title =  $data['items'][0]['snippet']['title'];
+
+//get transcript
+$file = "https://www.youtube.com/api/timedtext?v=".$id."&lang=en";
+
+$xml = simpleXML_load_file($file);
+
+$context = array();
+
+for ($i=0 ; $i<count($xml->text) ; $i++){
+    $context[$i]['text'] = $xml->text[$i];
+    $context[$i]['start'] = $xml->text[$i]['start'];
+    $context[$i]['dur'] = $xml->text[$i]['dur'];
+    $context[$i]['end'] = bcadd($xml->text[$i]['start'],$xml->text[$i]['dur'],3);
 }
-fclose($handle);
-$context = json_decode($context,true);
 
 //load the transcripts
 function loadcontext($i,$start,$end,$text){
@@ -58,9 +77,7 @@ echo'
 
 //send time to js
   for($i= 0 ; $i <count($context) ; $i++){
-      $s = $context[$i]["start_time"]/1000;
-      $e = $context[$i]["end_time"]/1000;
-      echo '<script> getcontext('.$s.','.$e.'); </script>';
+      echo '<script> getcontext('.$context[$i]['start'].','.$context[$i]['end'].'); </script>';
   }
   echo '<nav class="navbar navbar-inverse navbar-fixed-top">
           <div class="container-fluid">
@@ -102,7 +119,7 @@ echo'
   ';
   //send time and text to js
             for ($i = 1 ; $i <= count($context) ; $i++){
-              loadcontext($i,$context[$i-1]["start_time"]/1000,$context[$i-1]["end_time"]/1000,$context[$i-1]["text"]);
+              loadcontext($i,$context[$i-1]['start'],$context[$i-1]['end'],$context[$i-1]['text']);
             }
 
 echo'
@@ -117,4 +134,6 @@ echo'
 </body>
 
 </html>';
-?>
+
+
+ ?>

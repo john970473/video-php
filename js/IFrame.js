@@ -36,8 +36,8 @@ function onYouTubeIframeAPIReady() {
 function onPlayerReady(event) {
   // event.target.loadVideoById("oWP9Riq-ZBg", 5,"large");
   // event.target.playVideo();
-  setInterval(function(){ for (var i = 0; i < 20; i++) {
-    if (player.getCurrentTime() > start_time[i] / 1000 && player.getCurrentTime() < end_time[i] / 1000) {
+  setInterval(function(){ for (var i = 0; i < start_time.length; i++) {
+    if (player.getCurrentTime() > start_time[i] && player.getCurrentTime() < end_time[i]) {
       if (i!=0) document.getElementById('ts' + (i)).style.backgroundColor = "white";
       document.getElementById('ts' + (i + 1)).style.backgroundColor = "lightgray";
     }
@@ -70,21 +70,29 @@ function stopVideo() {
 }
 
 //control the play buttons
+var time ;
 function play_context_one(index,start,end) {
 
-  player.loadVideoById(id, start/1000,"large");
-  setTimeout(pauseVideo, end - start);
-  for (var i = 1; i <= 20; i++) {
+  player.loadVideoById(id, start,"large");
+  setTimeout(pauseVideo, (end-start)*1000);
+  time = end;
+  for (var i = 1; i <= start_time.length; i++) {
     document.getElementById('ts' + i).style.backgroundColor = "white";
   }
   document.getElementById('ts' + index).style.backgroundColor = "lightgray";
 }
 
 function pauseVideo() {
-  player.pauseVideo();
-  for (var i = 1; i <= 20; i++) {
-    document.getElementById('ts' + i).style.backgroundColor = "white";
+  if(player.getCurrentTime() > time){
+    player.pauseVideo();
+    for (var i = 1; i <= start_time.length; i++) {
+      document.getElementById('ts' + i).style.backgroundColor = "white";
+    }
   }
+  else {
+    setTimeout(pauseVideo, 500);
+  }
+
 }
 
 //parse the website to get video id
